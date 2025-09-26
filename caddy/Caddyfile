@@ -1,0 +1,12 @@
+https://{$DOMAIN} {
+
+    log
+
+    @v0 path_regexp v0 ^/v0/(.*)$
+    rewrite @v0 /{http.regexp.v0.1}?{query}&v=0
+
+
+    handle /* {
+        reverse_proxy {$BACKEND_API_URL}
+    }
+}
