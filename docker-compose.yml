@@ -1,46 +1,55 @@
 services:
-    caddy:
-        image: caddy:latest
-        restart: always
-        ports:
-            - "443:443"
-            - "80:80"
-        volumes:
-            - ./caddy/Caddyfile:/etc/caddy/Caddyfile
-            - ./caddy/data:/data
-        environment:
-            DOMAIN: ${DOMAIN:-http://localhost}
-            BACKEND_API_URL: ${BACKEND_API_URL}
-        logging:
-            options:
-                max-size: "10m"
-                max-file: "10"
-        depends_on:
-            - green
-            - blue
-    blue:
-        image: ghcr.io/menschmachine/pdfdancer-api:blue
-        restart: always
-        ports:
-            - "127.0.0.1:8080:8080"
-        environment:
-            COLOR: blue
-        healthcheck:
-          test: curl --fail -q localhost:8080/ping
-          start_period: 5s
-          interval: 10s
-          timeout: 10s
-          retries: 3
-    green:
-        image: ghcr.io/menschmachine/pdfdancer-api:green
-        restart: always
-        ports:
-            - "127.0.0.1:8081:8080"
-        environment:
-            COLOR: green
-        healthcheck:
-            test: curl --fail -q localhost:8080/ping
-            start_period: 5s
-            interval: 10s
-            timeout: 10s
-            retries: 3
+  caddy:
+    image: caddy:latest
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/data:/data
+    environment:
+      DOMAIN: ${DOMAIN:-http://localhost}
+      BACKEND_API_URL: ${BACKEND_API_URL}
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+    depends_on:
+      - green
+      - blue
+  blue:
+    image: ghcr.io/menschmachine/pdfdancer-api:blue
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      COLOR: blue
+    healthcheck:
+      test: curl --fail -q localhost:8080/ping
+      start_period: 5s
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./fonts:/home/app/fonts
+      - ./fonts.db:/home/app/fonts.db
+      - ./tenants.db:/home/app/tenants.db
+
+  green:
+    image: ghcr.io/menschmachine/pdfdancer-api:green
+    restart: always
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      COLOR: green
+    healthcheck:
+      test: curl --fail -q localhost:8080/ping
+      start_period: 5s
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./fonts:/home/app/fonts
+      - ./fonts.db:/home/app/fonts.db
+      - ./tenants.db:/home/app/tenants.db
