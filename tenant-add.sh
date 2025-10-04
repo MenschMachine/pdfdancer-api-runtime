@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# tenant-add.sh
+#
 # Inserts a new tenant and API token into the SQLite tenant database.
 # - Creates schema if it doesn't exist
 # - Inserts tenant if missing (by slug) or updates fields if provided
@@ -8,7 +10,7 @@ set -euo pipefail
 # - Prints the raw token to stdout
 #
 # Usage:
-#   scripts/tenant-add.sh \
+#   ./tenant-add.sh \
 #     --db ./tenant.db \
 #     --name "Acme Inc" \
 #     --slug acme \
@@ -61,7 +63,7 @@ while [[ $# -gt 0 ]]; do
     --created-by) CREATED_BY="$2"; shift 2;;
     --expires-at) EXPIRES_AT_ISO="$2"; shift 2;;
     -h|--help)
-      sed -n '1,28p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '3,29p' "$0" | sed 's/^# \{0,1\}//'
       exit 0;;
     *) echo "Unknown arg: $1" >&2; exit 1;;
   esac
