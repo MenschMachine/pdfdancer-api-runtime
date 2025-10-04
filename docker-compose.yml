@@ -25,6 +25,7 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       COLOR: blue
+      PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
     healthcheck:
       test: curl --fail -q localhost:8080/ping
       start_period: 5s
@@ -33,9 +34,8 @@ services:
       retries: 3
     volumes:
       - ./fonts:/home/app/fonts
-      - ./fonts.db:/home/app/fonts.db
-      - ./tenants.db:/home/app/tenants.db
-
+      - ./conf:/conf
+      - ./db:/db
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
     restart: always
@@ -43,6 +43,7 @@ services:
       - "127.0.0.1:8081:8080"
     environment:
       COLOR: green
+      PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
     healthcheck:
       test: curl --fail -q localhost:8080/ping
       start_period: 5s
@@ -51,5 +52,5 @@ services:
       retries: 3
     volumes:
       - ./fonts:/home/app/fonts
-      - ./fonts.db:/home/app/fonts.db
-      - ./tenants.db:/home/app/tenants.db
+      - ./conf:/conf
+      - ./db:/db

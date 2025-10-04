@@ -1,0 +1,14 @@
+pdfdancer:
+  font-db-path: /db/fonts.db
+  tenant-db-path: /db/tenants.db
+  cache:
+    enabled: true
+  text:
+    normalize: false
+  font:
+    manager: default
+    recommender: contour
+    alwaysUseRecommendations: false
+    glyph:
+      comparison:
+        algorithm: shape
