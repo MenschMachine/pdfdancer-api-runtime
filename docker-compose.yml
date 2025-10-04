@@ -19,7 +19,7 @@ services:
             - green
             - blue
     blue:
-        image: ghcr.io/menschmachine/pdfdancer-api:staging
+        image: ghcr.io/menschmachine/pdfdancer-api:blue
         restart: always
         ports:
             - "127.0.0.1:8080:8080"
@@ -32,7 +32,7 @@ services:
           timeout: 10s
           retries: 3
     green:
-        image: ghcr.io/menschmachine/pdfdancer-api:staging
+        image: ghcr.io/menschmachine/pdfdancer-api:green
         restart: always
         ports:
             - "127.0.0.1:8081:8080"
