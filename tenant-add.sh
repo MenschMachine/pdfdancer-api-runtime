@@ -3,9 +3,9 @@ set -euo pipefail
 
 # tenant-add.sh
 #
-# Inserts a new tenant and API token into the SQLite tenant database.
-# - Creates schema if it doesn't exist
-# - Inserts tenant if missing (by slug) or updates fields if provided
+# Inserts a new tenant, a default user, and an API token into the SQLite tenant database.
+# - Creates schema if it doesn't exist (tenants, users, tenant_users, tenant_api_tokens)
+# - Upserts tenant (by id), upserts user (by id or email), links user to tenant
 # - Generates a raw token, stores SHA-256 hash and prefix
 # - Prints the raw token to stdout
 #
@@ -21,7 +21,13 @@ set -euo pipefail
 #     [--token-name primary] \
 #     [--scopes documents:read,documents:write] \
 #     [--created-by USER_ID] \
-#     [--expires-at 2026-01-01T00:00:00Z]
+#     [--expires-at 2026-01-01T00:00:00Z] \
+#     [--user-id UUID] \
+#     [--user-email alice@example.com] \
+#     [--user-name "Alice Smith"] \
+#     [--user-status ACTIVE] \
+#     [--user-role OWNER] \
+#     [--user-state ACTIVE]
 #
 # Notes:
 # - plan must be one of: FREE, PRO, ENTERPRISE, SYSTEM
@@ -49,6 +55,14 @@ SCOPES="documents:read"
 CREATED_BY=""
 EXPIRES_AT_ISO=""
 
+# Optional user inputs
+USER_ID=""
+USER_EMAIL=""
+USER_NAME=""
+USER_STATUS="ACTIVE"
+USER_ROLE="OWNER"
+USER_STATE="ACTIVE"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --db) DB="$2"; shift 2;;
@@ -62,6 +76,12 @@ while [[ $# -gt 0 ]]; do
     --scopes) SCOPES="$2"; shift 2;;
     --created-by) CREATED_BY="$2"; shift 2;;
     --expires-at) EXPIRES_AT_ISO="$2"; shift 2;;
+    --user-id) USER_ID="$2"; shift 2;;
+    --user-email) USER_EMAIL="$2"; shift 2;;
+    --user-name) USER_NAME="$2"; shift 2;;
+    --user-status) USER_STATUS="$2"; shift 2;;
+    --user-role) USER_ROLE="$2"; shift 2;;
+    --user-state) USER_STATE="$2"; shift 2;;
     -h|--help)
       sed -n '3,29p' "$0" | sed 's/^# \{0,1\}//'
       exit 0;;
@@ -83,6 +103,22 @@ esac
 case "$STATUS" in
   ACTIVE|SUSPENDED|DELETED) :;;
   *) echo "Invalid --status: $STATUS" >&2; exit 1;;
+esac
+
+# Validate user enums
+case "$USER_STATUS" in
+  ACTIVE|SUSPENDED|DELETED) :;;
+  *) echo "Invalid --user-status: $USER_STATUS" >&2; exit 1;;
+esac
+
+case "$USER_ROLE" in
+  OWNER|ADMIN|MEMBER|VIEWER) :;;
+  *) echo "Invalid --user-role: $USER_ROLE (expected OWNER|ADMIN|MEMBER|VIEWER)" >&2; exit 1;;
+esac
+
+case "$USER_STATE" in
+  ACTIVE|INVITED|REMOVED|SUSPENDED) :;;
+  *) echo "Invalid --user-state: $USER_STATE (expected ACTIVE|INVITED|REMOVED|SUSPENDED)" >&2; exit 1;;
 esac
 
 # Epoch millis now
@@ -139,6 +175,14 @@ CREATE TABLE IF NOT EXISTS tenants (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE,
+  name TEXT,
+  status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tenant_users (
   id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
@@ -148,7 +192,8 @@ CREATE TABLE IF NOT EXISTS tenant_users (
   joined_at INTEGER NOT NULL,
   last_login_at INTEGER,
   UNIQUE(tenant_id, user_id),
-  FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS tenant_api_tokens (
   id TEXT PRIMARY KEY,
@@ -177,6 +222,13 @@ if [[ -n "$CREATED_BY" ]]; then CREATED_BY_SQL="'$(sql_escape "$CREATED_BY")'"; 
 TOKEN_NAME_SQL="'$(sql_escape "$TOKEN_NAME")'"
 SCOPES_SQL="'$(sql_escape "$SCOPES")'"
 
+# Prepare user SQL-safe literals
+if [[ -n "$USER_EMAIL" ]]; then USER_EMAIL_SQL="'$(sql_escape "$USER_EMAIL")'"; else USER_EMAIL_SQL="NULL"; fi
+if [[ -n "$USER_NAME" ]]; then USER_NAME_SQL="'$(sql_escape "$USER_NAME")'"; else USER_NAME_SQL="NULL"; fi
+USER_STATUS_SQL="'$(sql_escape "$USER_STATUS")'"
+USER_ROLE_SQL="'$(sql_escape "$USER_ROLE")'"
+USER_STATE_SQL="'$(sql_escape "$USER_STATE")'"
+
 # Determine tenant id by slug if it exists; otherwise generate a new one
 EXISTING_TENANT_ID=$(sqlite3 "$DB" "SELECT id FROM tenants WHERE slug = $SLUG_SQL LIMIT 1;") || true
 if [[ -n "$EXISTING_TENANT_ID" ]]; then
@@ -200,6 +252,50 @@ ON CONFLICT(id) DO UPDATE SET
   updated_at=excluded.updated_at;
 SQL
 
+# Determine or create user
+# Strategy:
+# - If USER_ID provided, use it
+# - Else if USER_EMAIL provided, reuse existing id by email if found, otherwise generate
+# - Else generate a new id
+if [[ -z "$USER_ID" && -n "$USER_EMAIL" ]]; then
+  EXISTING_USER_ID=$(sqlite3 "$DB" "SELECT id FROM users WHERE email = $USER_EMAIL_SQL LIMIT 1;") || true
+  if [[ -n "$EXISTING_USER_ID" ]]; then
+    USER_ID="$EXISTING_USER_ID"
+  fi
+fi
+if [[ -z "$USER_ID" ]]; then
+  USER_ID=$(uuid)
+fi
+
+# Upsert user by id
+sqlite3 "$DB" <<SQL
+PRAGMA foreign_keys = ON;
+INSERT INTO users (id, email, name, status, created_at, updated_at)
+VALUES ('$USER_ID', $USER_EMAIL_SQL, $USER_NAME_SQL, $USER_STATUS_SQL, $NOW_MS, $NOW_MS)
+ON CONFLICT(id) DO UPDATE SET
+  email=excluded.email,
+  name=excluded.name,
+  status=excluded.status,
+  updated_at=excluded.updated_at;
+SQL
+
+# Link user to tenant (upsert on composite key)
+TENANT_USER_ID=$(uuid)
+sqlite3 "$DB" <<SQL
+PRAGMA foreign_keys = ON;
+INSERT INTO tenant_users (id, tenant_id, user_id, role, state, joined_at, last_login_at)
+VALUES ('$TENANT_USER_ID', '$TENANT_ID', '$USER_ID', $USER_ROLE_SQL, $USER_STATE_SQL, $NOW_MS, NULL)
+ON CONFLICT(tenant_id, user_id) DO UPDATE SET
+  role=excluded.role,
+  state=excluded.state,
+  joined_at=excluded.joined_at;
+SQL
+
+# If created_by not provided, default it to the created user
+if [[ "$CREATED_BY_SQL" == "NULL" ]]; then
+  CREATED_BY_SQL="'$USER_ID'"
+fi
+
 # Insert token
 sqlite3 "$DB" <<SQL
 PRAGMA foreign_keys = ON;
@@ -213,6 +309,13 @@ Tenant created/updated:
   name: $NAME
   slug: $SLUG
   plan: $PLAN
+
+User created/updated:
+  id:        $USER_ID
+  email:     ${USER_EMAIL:-}
+  name:      ${USER_NAME:-}
+  role:      $USER_ROLE
+  state:     $USER_STATE
 
 API token created:
   id:        $TOKEN_ID
