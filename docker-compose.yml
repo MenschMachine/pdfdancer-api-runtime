@@ -23,9 +23,12 @@ services:
     restart: always
     ports:
       - "127.0.0.1:8080:8080"
+      # - "5005:5005"
     environment:
       COLOR: blue
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+    env_file:
+      - .env
     healthcheck:
       test: curl --fail -q localhost:8080/ping
       start_period: 5s
@@ -41,9 +44,12 @@ services:
     restart: always
     ports:
       - "127.0.0.1:8081:8080"
+      # - "5005:5005"
     environment:
       COLOR: green
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+    env_file:
+      - .env
     healthcheck:
       test: curl --fail -q localhost:8080/ping
       start_period: 5s
