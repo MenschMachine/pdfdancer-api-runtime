@@ -81,7 +81,7 @@ services:
 
 volumes:
   db-shared:
-  fonts-cache:
+  fonts-db:
   tmp-blue:
   tmp-green:
   caddy-data:
