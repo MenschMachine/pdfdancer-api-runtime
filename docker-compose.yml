@@ -1,6 +1,8 @@
+version: "3.9"
+
 services:
   caddy:
-    image: caddy:latest
+    image: caddy:2.8.4
     restart: always
     ports:
       - "443:443"
@@ -28,10 +30,12 @@ services:
     environment:
       COLOR: blue
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      JAVA_TOOL_OPTIONS: >
+        -Djava.io.tmpdir=/tmp
     env_file:
       - .env
     healthcheck:
-      test: curl --fail -q localhost:8080/ping
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
       start_period: 5s
       interval: 10s
       timeout: 10s
@@ -40,7 +44,12 @@ services:
       - fonts-cache:/home/app/fonts:ro
       - ./conf:/conf:ro
       - db-shared:/db
+      - tmp-blue:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
 
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
@@ -51,10 +60,12 @@ services:
     environment:
       COLOR: green
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      JAVA_TOOL_OPTIONS: >
+        -Djava.io.tmpdir=/tmp
     env_file:
       - .env
     healthcheck:
-      test: curl --fail -q localhost:8080/ping
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
       start_period: 5s
       interval: 10s
       timeout: 10s
@@ -63,9 +74,16 @@ services:
       - fonts-cache:/home/app/fonts:ro
       - ./conf:/conf:ro
       - db-shared:/db
+      - tmp-green:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
 
 volumes:
   db-shared:
   fonts-cache:
+  tmp-blue:
+  tmp-green:
   caddy-data:
