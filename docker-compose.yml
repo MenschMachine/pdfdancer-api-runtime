@@ -39,7 +39,7 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - fonts-db
+      - fonts-db:/home/app/fonts
       - ./conf:/conf:ro
       - db-shared:/db
       - tmp-blue:/tmp
@@ -69,7 +69,7 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - fonts-db
+      - fonts-db:/home/app/fonts
       - ./conf:/conf:ro
       - db-shared:/db
       - tmp-green:/tmp
@@ -81,7 +81,7 @@ services:
 
 volumes:
   db-shared:
-  fonts-db:
+  fonts-cache:
   tmp-blue:
   tmp-green:
   caddy-data:
