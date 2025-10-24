@@ -1,11 +1,4 @@
-{
-	# Enable HTTP/3 globally (QUIC)
-	server {
-		protocols h1 h2 h3
-	}
-}
-
-# HTTPS site
+# Primary HTTPS site (HTTP/3 automatically enabled)
 https://{$DOMAIN} {
 	log
 
@@ -19,7 +12,7 @@ https://{$DOMAIN} {
 	encode zstd gzip
 }
 
-# HTTP site (no redirect to HTTPS)
+# Primary HTTP site (no redirect)
 http://{$DOMAIN} {
 	log
 
@@ -31,4 +24,11 @@ http://{$DOMAIN} {
 	}
 
 	encode zstd gzip
+}
+
+# Catch-all redirect for any other hostname
+# (e.g., www.domain.com, example.net, IP address, etc.)
+:80, :443 {
+	@notPrimary host != {$DOMAIN}
+	redir @notPrimary https://{$DOMAIN}{uri}
 }
