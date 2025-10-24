@@ -25,10 +25,3 @@ http://{$DOMAIN} {
 
 	encode zstd gzip
 }
-
-# Catch-all redirect for any other hostname
-# (e.g., www.domain.com, example.net, IP address, etc.)
-:80, :443 {
-	@notPrimary host != {$DOMAIN}
-	redir @notPrimary https://{$DOMAIN}{uri}
-}
