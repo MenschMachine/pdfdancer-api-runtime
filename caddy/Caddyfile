@@ -5,8 +5,18 @@ https://{$DOMAIN} {
     @v0 path_regexp v0 ^/v0/(.*)$
     rewrite @v0 /{http.regexp.v0.1}?{query}&v=0
 
+    handle {
+        reverse_proxy {$BACKEND_API_URL} {
+            header_down -Content-Encoding
+            header_down -Content-Length
+        }
+    }
 
-    handle /* {
-        reverse_proxy {$BACKEND_API_URL}
+    encode zstd gzip br {
+        match {
+            header Content-Type text/*
+            header Content-Type application/json
+            header Content-Type application/javascript
+        }
     }
 }
