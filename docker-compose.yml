@@ -12,9 +12,11 @@ services:
       DOMAIN: ${DOMAIN:-http://localhost}
       BACKEND_API_URL: ${BACKEND_API_URL}
     logging:
+      driver: gelf
       options:
-        max-size: "10m"
-        max-file: "10"
+        gelf-address: "udp://logs.thefamouscat.com:12201"
+        tag: "pdfdancer/{{.Name}}"
+        env: "ENVIRONMENT"
     depends_on:
       - green
       - blue
@@ -43,9 +45,11 @@ services:
       - tmp-blue:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
+      driver: gelf
       options:
-        max-size: "10m"
-        max-file: "10"
+        gelf-address: "udp://logs.thefamouscat.com:12201"
+        tag: "pdfdancer/{{.Name}}"
+        env: "ENVIRONMENT"
 
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
@@ -71,9 +75,11 @@ services:
       - tmp-green:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
+      driver: gelf
       options:
-        max-size: "10m"
-        max-file: "10"
+        gelf-address: "udp://logs.thefamouscat.com:12201"
+        tag: "pdfdancer/{{.Name}}"
+        env: "ENVIRONMENT"
 
 volumes:
   db-shared:
