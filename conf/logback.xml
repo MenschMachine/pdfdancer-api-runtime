@@ -1,0 +1,33 @@
+<configuration debug="false">
+
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%.-13X{sessionId}|%1.-13X{tenantId}] %-5level %logger{36} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/pdfdancer.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/pdfdancer.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%.-13X{sessionId}|%1.-13X{tenantId}] %-5level %logger{36} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+    <logger name="org.apache.pdfbox" level="ERROR"/>
+    <logger name="org.apache.fontbox" level="ERROR"/>
+    <logger name="com.tfc.pdf.pdfdancer" level="INFO"/>
+    <logger name="com.tfc.pdf.pdfdancer.api.server.controller" level="DEBUG"/>
+    <logger name="com.tfc.shootingstar.util.Timer" level="INFO"/>
+    <logger name="com.tfc.shootingstar.core.watermark" level="INFO"/>
+</configuration>

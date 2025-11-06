@@ -30,6 +30,7 @@ services:
     environment:
       COLOR: blue
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      JAVA_OPTS: "-Dlogback.configurationFile=/logback.xml"
     env_file:
       - .env
     healthcheck:
@@ -41,6 +42,7 @@ services:
     volumes:
       - ./fonts:/home/app/fonts
       - ./conf:/conf:ro
+      - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
       - tmp-blue:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
@@ -60,6 +62,7 @@ services:
     environment:
       COLOR: green
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      JAVA_OPTS: "-Dlogback.configurationFile=/logback.xml"
     env_file:
       - .env
     healthcheck:
@@ -71,6 +74,7 @@ services:
     volumes:
       - ./fonts:/home/app/fonts
       - ./conf:/conf:ro
+      - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
       - tmp-green:/tmp
       - ./async-profiler-4.1-linux-x64:/asprof:ro
