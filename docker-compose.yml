@@ -40,7 +40,7 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - ./fonts:/home/app/fonts
+      - ${FONTS_DIR:-./fonts}:/home/app/fonts
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
@@ -72,7 +72,7 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - ./fonts:/home/app/fonts
+      - ${FONTS_DIR:-./fonts}:/home/app/fonts
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
