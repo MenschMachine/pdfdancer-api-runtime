@@ -88,7 +88,6 @@ services:
         env: "ENVIRONMENT"
 
 volumes:
-  db-shared:
-  tmp-blue:
-  tmp-green:
+  db-fonts:
+  db-tenants:
   caddy-data:
