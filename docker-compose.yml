@@ -34,7 +34,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/ping" ]
       start_period: 5s
       interval: 10s
       timeout: 10s
@@ -44,7 +44,7 @@ services:
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
-      - tmp-blue:/tmp
+      - ./sessions:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
       driver: gelf
@@ -66,7 +66,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/ping" ]
       start_period: 5s
       interval: 10s
       timeout: 10s
@@ -76,7 +76,7 @@ services:
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-shared:/db
-      - tmp-green:/tmp
+      - ./sessions:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
       driver: gelf

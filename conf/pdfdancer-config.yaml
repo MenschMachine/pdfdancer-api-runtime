@@ -3,6 +3,37 @@ pdfdancer:
   tenant-db-path: /db/tenants.db
   cache:
     enabled: true
+    # Cache configurations - size is the maximum number of entries, expiryMinutes is time before eviction
+    stringWidth:
+      size: 1000000
+      expiryMinutes: 10
+    fontReader:
+      size: 500
+      expiryMinutes: 30
+    fontDatabaseManager:
+      size: 1000
+      expiryMinutes: 60
+    glyphComparator:
+      size: 100000
+      expiryMinutes: 10
+    fontInfoGlyphPath:
+      size: 100000
+      expiryMinutes: 5
+    contourFontRecommender:
+      size: 1000
+      expiryMinutes: 5
+    documentRenderingGlyph:
+      size: 10000
+      expiryMinutes: 10
+    documentRenderingDocument:
+      size: 100
+      expiryMinutes: 10
+    glyphSimilarity:
+      size: 10000
+      expiryMinutes: 5
+    ttfGlyphExtractor:
+      size: 10000
+      expiryMinutes: 60
   text:
     normalize: false
   font:
@@ -12,3 +43,5 @@ pdfdancer:
     glyph:
       comparison:
         algorithm: shape
+  api:
+    anonymousTokensEnabled: true
