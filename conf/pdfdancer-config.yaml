@@ -1,6 +1,6 @@
 pdfdancer:
-  font-db-path: /db/fonts.db
-  tenant-db-path: /db/tenants.db
+  font-db-path: /db/fonts/fonts.db
+  tenant-db-path: /db/tenants/tenants.db
   cache:
     enabled: true
     # Cache configurations - size is the maximum number of entries, expiryMinutes is time before eviction

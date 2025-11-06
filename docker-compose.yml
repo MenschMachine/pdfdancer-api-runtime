@@ -43,7 +43,8 @@ services:
       - ${FONTS_DIR:-./fonts}:/home/app/fonts
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
-      - db-shared:/db
+      - db-fonts:/db/fonts/
+      - db-tenants:/db/tenants/
       - ./sessions:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
@@ -75,7 +76,8 @@ services:
       - ${FONTS_DIR:-./fonts}:/home/app/fonts
       - ./conf:/conf:ro
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
-      - db-shared:/db
+      - db-fonts:/db/fonts/
+      - db-tenants:/db/tenants/
       - ./sessions:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
