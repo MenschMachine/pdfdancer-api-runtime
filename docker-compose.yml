@@ -11,6 +11,8 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-http://localhost}
       BACKEND_API_URL: ${BACKEND_API_URL}
+    env_file:
+      - .env
     logging:
       driver: gelf
       options:
