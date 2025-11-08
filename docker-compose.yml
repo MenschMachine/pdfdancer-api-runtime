@@ -18,7 +18,7 @@ services:
       options:
         gelf-address: "udp://logs.thefamouscat.com:12201"
         tag: "pdfdancer/{{.Name}}"
-        env: "ENVIRONMENT"
+        env: ${ENVIRONMENT}
     depends_on:
       - green
       - blue
@@ -54,7 +54,7 @@ services:
       options:
         gelf-address: "udp://logs.thefamouscat.com:12201"
         tag: "pdfdancer/{{.Name}}"
-        env: "ENVIRONMENT"
+        env: ${ENVIRONMENT}
 
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
@@ -87,7 +87,7 @@ services:
       options:
         gelf-address: "udp://logs.thefamouscat.com:12201"
         tag: "pdfdancer/{{.Name}}"
-        env: "ENVIRONMENT"
+        env: ${ENVIRONMENT}
 
 volumes:
   db-fonts:
