@@ -14,11 +14,10 @@ services:
     env_file:
       - .env
     logging:
-      driver: gelf
-      options:
-        gelf-address: "udp://logs.thefamouscat.com:12201"
-        tag: "pdfdancer/{{.Name}}"
-        env: ${ENVIRONMENT}
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
     depends_on:
       - green
       - blue
@@ -38,7 +37,7 @@ services:
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/ping" ]
       start_period: 5s
-      interval: 10s
+      interval: 30s
       timeout: 10s
       retries: 3
     volumes:
@@ -47,14 +46,16 @@ services:
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-fonts:/db/fonts/
       - db-tenants:/db/tenants/
-      - ./sessions:/tmp/pdfdancer-sessions
+      - session-data:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
       driver: gelf
       options:
         gelf-address: "udp://logs.thefamouscat.com:12201"
         tag: "pdfdancer/{{.Name}}"
-        env: ${ENVIRONMENT}
+        env: "ENVIRONMENT"
+        max-buffer-size: "1m"
+        mode: "non-blocking"
 
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
@@ -71,7 +72,7 @@ services:
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/ping" ]
       start_period: 5s
-      interval: 10s
+      interval: 30s
       timeout: 10s
       retries: 3
     volumes:
@@ -80,16 +81,19 @@ services:
       - ${LOGBACK_XML_FILE:-./conf/logback.xml}:/logback.xml:ro
       - db-fonts:/db/fonts/
       - db-tenants:/db/tenants/
-      - ./sessions:/tmp/pdfdancer-sessions
+      - session-data:/tmp/pdfdancer-sessions
       - ./async-profiler-4.1-linux-x64:/asprof:ro
     logging:
       driver: gelf
       options:
         gelf-address: "udp://logs.thefamouscat.com:12201"
         tag: "pdfdancer/{{.Name}}"
-        env: ${ENVIRONMENT}
+        env: "ENVIRONMENT"
+        max-buffer-size: "1m"
+        mode: "non-blocking"
 
 volumes:
   db-fonts:
   db-tenants:
   caddy-data:
+  session-data:
