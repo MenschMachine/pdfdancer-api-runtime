@@ -1,7 +1,7 @@
 services:
   caddy:
     image: caddy:2.8.4
-    restart: always
+    restart: unless-stopped
     ports:
       - "443:443"
       - "80:80"
@@ -14,17 +14,17 @@ services:
     env_file:
       - .env
     logging:
-        driver: json-file
-        options:
-          max-size: "10m"
-          max-file: "3"
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - green
       - blue
 
   blue:
     image: ghcr.io/menschmachine/pdfdancer-api:blue
-    restart: always
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
       - "5005:5005"
@@ -59,7 +59,7 @@ services:
 
   green:
     image: ghcr.io/menschmachine/pdfdancer-api:green
-    restart: always
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8081:8080"
       - "5006:5005"
@@ -92,7 +92,34 @@ services:
         max-buffer-size: "1m"
         mode: "non-blocking"
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: pdfdancer-clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native protocol
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./scripts/clickhouse-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - CLICKHOUSE_DB=pdfdancer
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    env_file:
+      - .env
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "localhost:8123/ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
+  clickhouse-data:
   db-fonts:
   db-tenants:
   caddy-data:
