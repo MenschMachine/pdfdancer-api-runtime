@@ -16,6 +16,5 @@
     <logger name="org.apache.fontbox" level="ERROR"/>
     <logger name="com.tfc.pdf.pdfdancer" level="INFO"/>
     <logger name="com.tfc.shootingstar.util.Timer" level="WARN"/>
-    <logger name="com.tfc.shootingstar.core.watermark" level="INFO"/>
     <logger name="com.tfc.pdf.pdfdancer.api.server.JvmMetricsLogger" level="WARN"/>
 </configuration>
