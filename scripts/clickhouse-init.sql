@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS pdfdancer.metrics_events (
     session_id Nullable(String),
     user_id Nullable(String),
     tenant_id Nullable(String),
+    plan_code Nullable(String),
     success Bool DEFAULT true,
     error_message Nullable(String),
     metadata Nullable(String)
