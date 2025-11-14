@@ -4,3 +4,4 @@ caddy/data/
 .aider*
 /async-profiler-4.1-linux-x64.*
 /async-profiler-4.1-linux-x64/
+/logs
