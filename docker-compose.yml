@@ -20,11 +20,12 @@ services:
         max-file: "3"
     depends_on:
       - green
-      - blue
 
   blue:
     image: ghcr.io/menschmachine/pdfdancer-api:blue
     restart: unless-stopped
+    profiles:
+      - blue-enabled
     ports:
       - "127.0.0.1:8080:8080"
       - "5005:5005"
