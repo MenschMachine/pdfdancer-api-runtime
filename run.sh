@@ -30,10 +30,10 @@ if [ "$IMAGE_TAG" != "$SERVICE_NAME" ]; then
   docker tag ghcr.io/menschmachine/pdfdancer-api:${IMAGE_TAG} ghcr.io/menschmachine/pdfdancer-api:${SERVICE_NAME}
 fi
 
+docker compose up -d
+
 # When using main target, shutdown the blue service
 if [ "$TARGET" = "main" ]; then
   echo "Shutting down blue service..."
   docker compose stop blue
 fi
-
-docker compose up -d
