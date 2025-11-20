@@ -33,3 +33,8 @@ if [ "$IMAGE_TAG" != "$SERVICE_NAME" ]; then
 fi
 
 docker compose up -d
+
+# When using main target, ensure blue service is stopped
+if [ "$TARGET" = "main" ]; then
+  docker compose stop blue 2>/dev/null || true
+fi
