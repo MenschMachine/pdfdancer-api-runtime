@@ -12,10 +12,12 @@ case "$TARGET" in
   blue|green)
     SERVICE_NAME="$TARGET"
     IMAGE_TAG="$TARGET"
+    export COMPOSE_PROFILES="blue-enabled"
     ;;
   main)
     SERVICE_NAME="green"
     IMAGE_TAG="main"
+    export COMPOSE_PROFILES=""
     ;;
   *)
     echo "USAGE: $0 [blue|green|main]"
@@ -31,9 +33,3 @@ if [ "$IMAGE_TAG" != "$SERVICE_NAME" ]; then
 fi
 
 docker compose up -d
-
-# When using main target, shutdown the blue service
-if [ "$TARGET" = "main" ]; then
-  echo "Shutting down blue service..."
-  docker compose stop blue
-fi
