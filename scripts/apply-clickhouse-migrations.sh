@@ -170,11 +170,44 @@ EOF
     execute_sql "$sql" "Create ASN dictionary"
 }
 
+# Check dictionary status and surface errors
+check_asn_dictionary_status() {
+    # Force a reload, then read status/exception
+    execute_sql "SYSTEM RELOAD DICTIONARY pdfdancer.asn_dict" "Reload ASN dictionary" || return 1
+
+    local status_row
+    status_row=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT status, last_exception FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+    local status_code last_exception
+    status_code=$(echo "$status_row" | awk '{print $1}')
+    last_exception=$(echo "$status_row" | cut -d' ' -f2-)
+
+    # status may be numeric or enum string (LOADED/NOT_LOADED)
+    if [ -z "$status_code" ]; then
+        echo -e "${RED}✗ Could not read dictionary status${NC}"
+        return 1
+    fi
+
+    if [ "$status_code" = "1" ] || [[ "$status_code" =~ LOADED ]]; then
+        echo -e "${GREEN}✓ ASN dictionary loaded${NC}"
+        return 0
+    fi
+
+    echo -e "${RED}✗ ASN dictionary not loaded (status=${status_code})${NC}"
+    if [ -n "$last_exception" ] && [ "$last_exception" != "NULL" ]; then
+        echo -e "${RED}Last exception: ${last_exception}${NC}"
+    fi
+    return 1
+}
+
 # Check ClickHouse connectivity
 echo -e "${BLUE}Connection Details:${NC}"
 echo "  Host:     ${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}"
 echo "  User:     ${CLICKHOUSE_USER}"
 echo "  Database: ${CLICKHOUSE_DATABASE}"
+echo "  TCP Port: ${CLICKHOUSE_TCP_PORT}"
 echo ""
 
 echo -e "${YELLOW}Testing connection...${NC}"
@@ -273,21 +306,18 @@ else
             --data-binary "SELECT count() FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
             -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
 
-        if [ "$asn_dict_exists" = "0" ]; then
-            echo -e "${YELLOW}⚠ ASN dictionary not found${NC}"
-            echo -e "${BLUE}Creating ASN dictionary...${NC}"
-            echo ""
-            create_asn_dictionary || exit 1
-            echo ""
-            echo -e "${GREEN}✓ ASN dictionary created${NC}"
-        else
-            current_layout=$(curl -sS "${CLICKHOUSE_URL}/" \
-                --data-binary "SELECT type FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
-                -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
-
-            echo -e "${YELLOW}⚠ Refreshing ASN dictionary (current layout: '${current_layout}')${NC}"
-            execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
-            create_asn_dictionary || exit 1
+        echo -e "${YELLOW}⚠ (Re)creating ASN dictionary${NC}"
+        execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
+        create_asn_dictionary || exit 1
+        # Report but do not abort on reload failure; exit after printing details
+        if ! check_asn_dictionary_status; then
+            echo -e "${RED}Dictionary reload failed. Verify CLICKHOUSE_TCP_PORT/USER/PASSWORD for native access.${NC}"
+            exit 1
+        fi
+        # Smoke-test a lookup to surface connection/credential issues immediately
+        if ! execute_sql "SELECT dictGet('pdfdancer.asn_dict','asn', toUInt32(IPv4StringToNum('52.173.108.16')))" "Test ASN dictionary lookup (52.173.108.16)"; then
+            echo -e "${RED}Dictionary lookup failed. Verify native connectivity (HOST/TCP_PORT/USER/PASSWORD).${NC}"
+            exit 1
         fi
 
         echo ""
