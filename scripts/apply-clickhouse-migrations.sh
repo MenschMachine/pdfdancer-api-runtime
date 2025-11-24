@@ -302,14 +302,30 @@ else
     else
         echo -e "${GREEN}✓ ASN lookup tables already exist${NC}"
         # Ensure ASN dictionary exists even if tables were created earlier
-        asn_dict_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
-            --data-binary "SELECT count() FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
-            -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+    asn_dict_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT count() FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
 
-        echo -e "${YELLOW}⚠ (Re)creating ASN dictionary${NC}"
-        execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
-        create_asn_dictionary || exit 1
-        # Report but do not abort on reload failure; exit after printing details
+        if [ "$asn_dict_exists" = "0" ]; then
+            echo -e "${YELLOW}⚠ ASN dictionary not found; creating${NC}"
+            create_asn_dictionary || exit 1
+        else
+            dict_info=$(curl -sS "${CLICKHOUSE_URL}/" \
+                --data-binary "SELECT type, status, last_exception FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
+                -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+            dict_type=$(echo "$dict_info" | awk '{print $1}')
+            dict_status=$(echo "$dict_info" | awk '{print $2}')
+            dict_exception=$(echo "$dict_info" | cut -d' ' -f3-)
+
+            if [ "$dict_type" != "Trie" ]; then
+                echo -e "${YELLOW}⚠ ASN dictionary exists with type '${dict_type}', recreating as Trie${NC}"
+                execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
+                create_asn_dictionary || exit 1
+            else
+                echo -e "${GREEN}✓ ASN dictionary exists (type=${dict_type}), reloading${NC}"
+            fi
+        fi
+
         if ! check_asn_dictionary_status; then
             echo -e "${RED}Dictionary reload failed. Verify CLICKHOUSE_TCP_PORT/USER/PASSWORD for native access.${NC}"
             exit 1
