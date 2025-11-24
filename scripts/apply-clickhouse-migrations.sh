@@ -150,9 +150,9 @@ create_asn_dictionary() {
 CREATE DICTIONARY IF NOT EXISTS pdfdancer.asn_dict
 (
     network    String,
-    asn        Nullable(String),
-    as_name    Nullable(String),
-    as_domain  Nullable(String)
+    asn        String,
+    as_name    String,
+    as_domain  String
 )
 PRIMARY KEY network
 SOURCE(CLICKHOUSE(
@@ -161,7 +161,7 @@ SOURCE(CLICKHOUSE(
   USER '${CLICKHOUSE_USER}'
   PASSWORD '${CLICKHOUSE_PASSWORD}'
   DATABASE '${CLICKHOUSE_DATABASE}'
-  QUERY 'SELECT network, asn, as_name, as_domain FROM pdfdancer.asn_ranges WHERE network NOT LIKE ''%:%'''
+  QUERY 'SELECT network, coalesce(asn, ''''), coalesce(as_name, ''''), coalesce(as_domain, '''') FROM pdfdancer.asn_ranges WHERE network NOT LIKE ''%:%'''
 ))
 LAYOUT(IP_TRIE())
 LIFETIME(0);
