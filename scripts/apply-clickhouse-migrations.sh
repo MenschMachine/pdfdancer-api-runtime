@@ -4,6 +4,23 @@ set -e
 # ClickHouse Migration Script
 # Applies schema migrations to a ClickHouse instance
 
+
+# Resolve the directory where the script itself is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Parent directory of the script
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# File you want to check
+TARGET_FILE="$PARENT_DIR/.env"
+
+# Test & source
+if [[ -f "$TARGET_FILE" ]]; then
+    source "$TARGET_FILE"
+else
+    echo "File not found: $TARGET_FILE"
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,9 +34,8 @@ CLICKHOUSE_PORT="${CLICKHOUSE_PORT:-8123}"
 CLICKHOUSE_USER="${CLICKHOUSE_USER:-default}"
 CLICKHOUSE_PASSWORD="${CLICKHOUSE_PASSWORD:-}"
 CLICKHOUSE_DATABASE="${CLICKHOUSE_DATABASE:-pdfdancer}"
+CLICKHOUSE_TCP_PORT="${CLICKHOUSE_TCP_PORT:-9000}"
 
-# Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║         ClickHouse Migration Tool - PDFDancer API             ║${NC}"
@@ -127,6 +143,33 @@ execute_sql_file_multi() {
     return 0
 }
 
+# Create ASN dictionary with credentials (range-hashed for IPv4)
+create_asn_dictionary() {
+    local sql
+    read -r -d '' sql <<EOF
+CREATE DICTIONARY IF NOT EXISTS pdfdancer.asn_dict
+(
+    network    String,
+    asn        Nullable(String),
+    as_name    Nullable(String),
+    as_domain  Nullable(String)
+)
+PRIMARY KEY network
+SOURCE(CLICKHOUSE(
+  HOST '${CLICKHOUSE_HOST}'
+  PORT ${CLICKHOUSE_TCP_PORT}
+  USER '${CLICKHOUSE_USER}'
+  PASSWORD '${CLICKHOUSE_PASSWORD}'
+  DATABASE '${CLICKHOUSE_DATABASE}'
+  QUERY 'SELECT network, asn, as_name, as_domain FROM pdfdancer.asn_ranges WHERE network NOT LIKE ''%:%'''
+))
+LAYOUT(IP_TRIE())
+LIFETIME(0);
+EOF
+
+    execute_sql "$sql" "Create ASN dictionary"
+}
+
 # Check ClickHouse connectivity
 echo -e "${BLUE}Connection Details:${NC}"
 echo "  Host:     ${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}"
@@ -225,6 +268,28 @@ else
         echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
     else
         echo -e "${GREEN}✓ ASN lookup tables already exist${NC}"
+        # Ensure ASN dictionary exists even if tables were created earlier
+        asn_dict_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+            --data-binary "SELECT count() FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
+            -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+        if [ "$asn_dict_exists" = "0" ]; then
+            echo -e "${YELLOW}⚠ ASN dictionary not found${NC}"
+            echo -e "${BLUE}Creating ASN dictionary...${NC}"
+            echo ""
+            create_asn_dictionary || exit 1
+            echo ""
+            echo -e "${GREEN}✓ ASN dictionary created${NC}"
+        else
+            current_layout=$(curl -sS "${CLICKHOUSE_URL}/" \
+                --data-binary "SELECT type FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict'" \
+                -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+            echo -e "${YELLOW}⚠ Refreshing ASN dictionary (current layout: '${current_layout}')${NC}"
+            execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
+            create_asn_dictionary || exit 1
+        fi
+
         echo ""
         echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
         echo -e "${GREEN}║  Schema is up to date - no migrations needed                  ║${NC}"
