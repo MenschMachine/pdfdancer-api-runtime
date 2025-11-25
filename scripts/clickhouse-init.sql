@@ -2,7 +2,7 @@
 
 -- Main events table for raw metrics
 CREATE TABLE IF NOT EXISTS pdfdancer.metrics_events (
-    timestamp DateTime NOT NULL,
+    timestamp DateTime64(6) NOT NULL,
     event_type String NOT NULL,
     operation_type Nullable(String),
     duration_ms Nullable(UInt32),
