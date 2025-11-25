@@ -2,8 +2,8 @@
 
 -- Main events table for raw metrics
 CREATE TABLE IF NOT EXISTS pdfdancer.metrics_events (
-    timestamp DateTime64(6) NOT NULL,
-    event_type String NOT NULL,
+    timestamp DateTime64(6),
+    event_type String,
     operation_type Nullable(String),
     duration_ms Nullable(UInt32),
     session_id Nullable(String),
@@ -15,11 +15,12 @@ CREATE TABLE IF NOT EXISTS pdfdancer.metrics_events (
     metadata Nullable(String),
     client_country Nullable(String),
     client_region Nullable(String),
-    cloudflare_ray Nullable(String)
+    cloudflare_ray Nullable(String),
+    connecting_ip Nullable(String)
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (timestamp, event_type)
-TTL timestamp + INTERVAL 90 DAY
+TTL toDateTime(timestamp) + INTERVAL 90 DAY
 SETTINGS index_granularity = 8192;
 
 -- Daily aggregates table for long-term retention

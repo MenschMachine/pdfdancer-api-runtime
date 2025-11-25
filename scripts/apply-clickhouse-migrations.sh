@@ -261,7 +261,7 @@ else
         echo -e "${YELLOW}⚠ timestamp column has second precision (DateTime)${NC}"
         echo -e "${BLUE}Upgrading to microsecond precision (DateTime64(6))...${NC}"
         echo ""
-        execute_sql_file "${SCRIPT_DIR}/clickhouse-upgrade-timestamp-precision.sql" "Upgrade timestamp to DateTime64(6)" || exit 1
+        execute_sql_file_multi "${SCRIPT_DIR}/clickhouse-upgrade-timestamp-precision.sql" "Upgrade timestamp to DateTime64(6)" || exit 1
         echo ""
     else
         echo -e "${GREEN}✓ timestamp column already has microsecond precision${NC}"
