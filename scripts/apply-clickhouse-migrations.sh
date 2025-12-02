@@ -279,6 +279,21 @@ else
         echo -e "${GREEN}✓ connecting_ip column already exists${NC}"
     fi
 
+    # Check if client info columns are needed
+    client_lang_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT count() FROM system.columns WHERE database = '${CLICKHOUSE_DATABASE}' AND table = 'metrics_events' AND name = 'client_language'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+    if [ "$client_lang_exists" = "0" ]; then
+        echo -e "${YELLOW}⚠ client_language/client_version columns not found${NC}"
+        echo -e "${BLUE}Applying client info migration...${NC}"
+        echo ""
+        execute_sql_file "${SCRIPT_DIR}/clickhouse-add-client-info.sql" "Apply client info (language/version) migration" || exit 1
+        echo ""
+    else
+        echo -e "${GREEN}✓ client_language/client_version columns already exist${NC}"
+    fi
+
     # Check if timestamp precision upgrade is needed (DateTime -> DateTime64(6))
     timestamp_type=$(curl -sS "${CLICKHOUSE_URL}/" \
         --data-binary "SELECT type FROM system.columns WHERE database = '${CLICKHOUSE_DATABASE}' AND table = 'metrics_events' AND name = 'timestamp'" \

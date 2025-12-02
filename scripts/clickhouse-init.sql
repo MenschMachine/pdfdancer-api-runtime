@@ -16,7 +16,10 @@ CREATE TABLE IF NOT EXISTS pdfdancer.metrics_events (
     client_country Nullable(String),
     client_region Nullable(String),
     cloudflare_ray Nullable(String),
-    connecting_ip Nullable(String)
+    connecting_ip Nullable(String),
+    client_info Nullable(String),
+    client_language Nullable(String),
+    client_version Nullable(String)
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (timestamp, event_type)
