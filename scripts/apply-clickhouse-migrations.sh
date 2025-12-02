@@ -143,7 +143,7 @@ execute_sql_file_multi() {
     return 0
 }
 
-# Create ASN dictionary with credentials (range-hashed for IPv4)
+# Create ASN dictionary with credentials (IP_TRIE for IPv4)
 create_asn_dictionary() {
     local sql
     read -r -d '' sql <<EOF
@@ -167,7 +167,34 @@ LAYOUT(IP_TRIE())
 LIFETIME(0);
 EOF
 
-    execute_sql "$sql" "Create ASN dictionary"
+    execute_sql "$sql" "Create ASN dictionary (IPv4)"
+}
+
+# Create ASN dictionary for IPv6 (IP_TRIE layout supports IPv6)
+create_asn_dictionary_v6() {
+    local sql
+    read -r -d '' sql <<EOF
+CREATE DICTIONARY IF NOT EXISTS pdfdancer.asn_dict_v6
+(
+    network    String,
+    asn        String,
+    as_name    String,
+    as_domain  String
+)
+PRIMARY KEY network
+SOURCE(CLICKHOUSE(
+  HOST '${CLICKHOUSE_HOST}'
+  PORT ${CLICKHOUSE_TCP_PORT}
+  USER '${CLICKHOUSE_USER}'
+  PASSWORD '${CLICKHOUSE_PASSWORD}'
+  DATABASE '${CLICKHOUSE_DATABASE}'
+  QUERY 'SELECT network, coalesce(asn, ''''), coalesce(as_name, ''''), coalesce(as_domain, '''') FROM pdfdancer.asn_ranges_v6'
+))
+LAYOUT(IP_TRIE())
+LIFETIME(0);
+EOF
+
+    execute_sql "$sql" "Create ASN dictionary (IPv6)"
 }
 
 # Check ClickHouse connectivity
@@ -304,12 +331,45 @@ else
             execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict" "Drop existing ASN dictionary" || exit 1
             create_asn_dictionary || exit 1
         fi
-
-        echo ""
-        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${GREEN}║  Schema is up to date - no migrations needed                  ║${NC}"
-        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
     fi
+
+    # Check if IPv6 ASN lookup table is needed
+    asn_v6_table_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT count() FROM system.tables WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_ranges_v6'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+    if [ "$asn_v6_table_exists" = "0" ]; then
+        echo -e "${YELLOW}⚠ IPv6 ASN lookup table not found${NC}"
+        echo -e "${BLUE}Creating IPv6 ASN table...${NC}"
+        echo ""
+        execute_sql "CREATE TABLE IF NOT EXISTS pdfdancer.asn_ranges_v6 (network String, country Nullable(String), country_code Nullable(String), continent Nullable(String), continent_code Nullable(String), asn Nullable(String), as_name Nullable(String), as_domain Nullable(String)) ENGINE = MergeTree() ORDER BY network SETTINGS index_granularity = 8192" "Create IPv6 ASN table" || exit 1
+        echo ""
+    else
+        echo -e "${GREEN}✓ IPv6 ASN lookup table already exists${NC}"
+    fi
+
+    # Ensure IPv6 ASN dictionary exists
+    asn_dict_v6_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT count() FROM system.dictionaries WHERE database = '${CLICKHOUSE_DATABASE}' AND name = 'asn_dict_v6'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+    if [ "$asn_dict_v6_exists" = "0" ]; then
+        echo -e "${YELLOW}⚠ IPv6 ASN dictionary not found${NC}"
+        echo -e "${BLUE}Creating IPv6 ASN dictionary...${NC}"
+        echo ""
+        create_asn_dictionary_v6 || exit 1
+        echo ""
+        echo -e "${GREEN}✓ IPv6 ASN dictionary created${NC}"
+    else
+        echo -e "${YELLOW}⚠ Refreshing IPv6 ASN dictionary${NC}"
+        execute_sql "DROP DICTIONARY IF EXISTS pdfdancer.asn_dict_v6" "Drop existing IPv6 ASN dictionary" || exit 1
+        create_asn_dictionary_v6 || exit 1
+    fi
+
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  Schema is up to date - no migrations needed                  ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 fi
 
 echo ""
