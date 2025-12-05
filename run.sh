@@ -6,7 +6,21 @@ cd "$SCRIPTPATH"
 source .env
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-TAG="${1:-main}"
+PULL_ONLY=false
+TAG="main"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --pull)
+      PULL_ONLY=true
+      shift
+      ;;
+    *)
+      TAG="$1"
+      shift
+      ;;
+  esac
+done
 
 # Determine service name and compose profiles based on tag
 if [ "$TAG" = "blue" ]; then
@@ -25,6 +39,10 @@ IMAGE_TAG="$TAG"
 
 export BACKEND_API_URL=http://pdfdancer-api-runtime-${SERVICE_NAME}-1:8080
 docker pull ghcr.io/menschmachine/pdfdancer-api:${IMAGE_TAG}
+
+if [ "$PULL_ONLY" = true ]; then
+  exit 0
+fi
 
 if [ "$IMAGE_TAG" != "$SERVICE_NAME" ]; then
   docker tag ghcr.io/menschmachine/pdfdancer-api:${IMAGE_TAG} ghcr.io/menschmachine/pdfdancer-api:${SERVICE_NAME}
