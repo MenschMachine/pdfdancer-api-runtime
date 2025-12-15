@@ -27,11 +27,13 @@ set -euo pipefail
 #     [--user-name "Alice Smith"] \
 #     [--user-status ACTIVE] \
 #     [--user-role OWNER] \
-#     [--user-state ACTIVE]
+#     [--user-state ACTIVE] \
+#     [--token RAW_TOKEN]
 #
 # Notes:
 # - plan must be one of: FREE, PRO, ENTERPRISE, SYSTEM
 # - status must be one of: ACTIVE, SUSPENDED, DELETED
+# - token can be any string (otherwise auto-generated as 64 hex characters)
 # - requires: sqlite3, openssl, date
 
 if ! command -v sqlite3 >/dev/null 2>&1; then
@@ -54,6 +56,7 @@ TOKEN_NAME="primary"
 SCOPES="documents:read"
 CREATED_BY=""
 EXPIRES_AT_ISO=""
+RAW_TOKEN=""
 
 # Optional user inputs
 USER_ID=""
@@ -82,6 +85,7 @@ while [[ $# -gt 0 ]]; do
     --user-status) USER_STATUS="$2"; shift 2;;
     --user-role) USER_ROLE="$2"; shift 2;;
     --user-state) USER_STATE="$2"; shift 2;;
+    --token) RAW_TOKEN="$2"; shift 2;;
     -h|--help)
       sed -n '3,29p' "$0" | sed 's/^# \{0,1\}//'
       exit 0;;
@@ -153,8 +157,11 @@ PY
 
 TOKEN_ID=$(uuid)
 
-# Generate raw token: 64 hex chars (like service)
-RAW_TOKEN=$(openssl rand -hex 32)
+# Generate or use provided raw token
+if [[ -z "$RAW_TOKEN" ]]; then
+  # Generate raw token: 64 hex chars (like service)
+  RAW_TOKEN=$(openssl rand -hex 32)
+fi
 PREFIX=${RAW_TOKEN:0:8}
 TOKEN_HASH=$(printf "%s" "$RAW_TOKEN" | openssl dgst -sha256 -binary | xxd -p -c 256)
 
