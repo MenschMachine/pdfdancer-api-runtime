@@ -54,3 +54,6 @@ docker compose up -d
 if [ "$TAG" != "blue" ]; then
   docker compose stop blue 2>/dev/null || true
 fi
+
+# Restore cursor visibility (docker login can hide it)
+tput cnorm 2>/dev/null || true
