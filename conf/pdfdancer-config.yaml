@@ -40,8 +40,20 @@ pdfdancer:
     manager: default
     recommender: contour
     alwaysUseRecommendations: false
+    reembedFromSource: false
     glyph:
       comparison:
         algorithm: shape
   api:
     anonymousTokensEnabled: true
+  feature:
+    ocrDetection: false
+  instructionLimit:
+    # Maximum instructions per page (0 = unlimited)
+    perPage: 250000
+    # Maximum instructions per document (0 = unlimited)
+    perDocument: 5000000
+
+  debug:
+    detectCycles: false
+    trackCycleOrigins: false
