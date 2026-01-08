@@ -33,6 +33,7 @@ services:
       COLOR: blue
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
       JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS} -Dlogback.configurationFile=/logback.xml"
+      PII_SERVICE_URL: "http://pii-detection:9000"
     env_file:
       - .env
     healthcheck:
@@ -68,6 +69,7 @@ services:
       COLOR: green
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
       JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS} -Dlogback.configurationFile=/logback.xml"
+      PII_SERVICE_URL: "http://pii-detection:9000"
     env_file:
       - .env
     healthcheck:
