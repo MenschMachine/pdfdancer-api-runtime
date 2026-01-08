@@ -39,6 +39,7 @@ IMAGE_TAG="$TAG"
 
 export BACKEND_API_URL=http://pdfdancer-api-runtime-${SERVICE_NAME}-1:8080
 docker pull ghcr.io/menschmachine/pdfdancer-api:${IMAGE_TAG}
+docker pull ghcr.io/menschmachine/pdfdancer-pii-detection:latest
 
 if [ "$PULL_ONLY" = true ]; then
   exit 0
