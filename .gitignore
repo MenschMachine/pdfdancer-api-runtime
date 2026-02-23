@@ -5,3 +5,4 @@ caddy/data/
 /async-profiler-4.1-linux-x64.*
 /async-profiler-4.1-linux-x64/
 /logs
+/db/tenants.db.bak*
