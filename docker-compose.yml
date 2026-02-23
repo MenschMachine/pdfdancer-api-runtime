@@ -32,6 +32,7 @@ services:
     environment:
       COLOR: blue
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      TENANT_DB_PATH: /db/tenants/tenants.db
       JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS} -Dlogback.configurationFile=/logback.xml"
       PII_SERVICE_URL: "http://pii-detection:8000"
     env_file:
@@ -68,6 +69,7 @@ services:
     environment:
       COLOR: green
       PDFDANCER_CONFIG_FILE: /conf/pdfdancer-config.yaml
+      TENANT_DB_PATH: /db/tenants/tenants.db
       JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS} -Dlogback.configurationFile=/logback.xml"
       PII_SERVICE_URL: "http://pii-detection:8000"
     env_file:
