@@ -45,6 +45,16 @@ if [ "$PULL_ONLY" = true ]; then
   exit 0
 fi
 
+# Backup tenant database from Docker volume before deploy
+BACKUP_FILE="$SCRIPTPATH/db/tenants.db.bak.$(date +%Y%m%d_%H%M%S)"
+VOLUME_NAME=$(docker volume ls --format '{{.Name}}' | grep 'db-tenants$' | head -1)
+if [ -n "$VOLUME_NAME" ]; then
+  docker compose stop "$SERVICE_NAME" 2>/dev/null || true
+  docker run --rm -v "$VOLUME_NAME":/db -v "$SCRIPTPATH/db":/backup alpine \
+    cp /db/tenants.db "/backup/$(basename "$BACKUP_FILE")"
+  echo "Tenant DB backed up to $BACKUP_FILE"
+fi
+
 if [ "$IMAGE_TAG" != "$SERVICE_NAME" ]; then
   docker tag ghcr.io/menschmachine/pdfdancer-api:${IMAGE_TAG} ghcr.io/menschmachine/pdfdancer-api:${SERVICE_NAME}
 fi
