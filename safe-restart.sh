@@ -30,8 +30,9 @@ fi
 LAST_TS=$(echo "$LAST_CONTROLLER_LINE" | awk '{print $1 " " $2}' | cut -d. -f1)
 echo "Last controller call: $LAST_TS"
 
-LAST_EPOCH=$(date -d "$LAST_TS" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S" "$LAST_TS" +%s 2>/dev/null)
-NOW_EPOCH=$(date +%s)
+# Log timestamps are UTC; force UTC for both parsing and current time
+LAST_EPOCH=$(TZ=UTC date -d "$LAST_TS" +%s 2>/dev/null || TZ=UTC date -j -f "%Y-%m-%d %H:%M:%S" "$LAST_TS" +%s 2>/dev/null)
+NOW_EPOCH=$(TZ=UTC date +%s)
 DIFF=$((NOW_EPOCH - LAST_EPOCH))
 
 echo "Last controller activity was ${DIFF}s ago (threshold: ${IDLE_THRESHOLD}s)"
