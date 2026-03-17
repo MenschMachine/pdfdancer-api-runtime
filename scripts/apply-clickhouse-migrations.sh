@@ -381,6 +381,21 @@ else
         create_asn_dictionary_v6 || exit 1
     fi
 
+    # Check if request_body column is needed
+    request_body_exists=$(curl -sS "${CLICKHOUSE_URL}/" \
+        --data-binary "SELECT count() FROM system.columns WHERE database = '${CLICKHOUSE_DATABASE}' AND table = 'metrics_events' AND name = 'request_body'" \
+        -H "X-ClickHouse-Database: ${CLICKHOUSE_DATABASE}")
+
+    if [ "$request_body_exists" = "0" ]; then
+        echo -e "${YELLOW}⚠ request_body column not found${NC}"
+        echo -e "${BLUE}Applying request body migration...${NC}"
+        echo ""
+        execute_sql_file "${SCRIPT_DIR}/clickhouse-add-request-body.sql" "Apply request body migration" || exit 1
+        echo ""
+    else
+        echo -e "${GREEN}✓ request_body column already exists${NC}"
+    fi
+
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║  Schema is up to date - no migrations needed                  ║${NC}"
@@ -391,7 +406,7 @@ echo ""
 echo -e "${BLUE}Verifying schema...${NC}"
 
 # Verify all expected columns exist
-expected_columns="timestamp event_type operation_type duration_ms session_id user_id tenant_id plan_code success error_message metadata client_country client_region cloudflare_ray connecting_ip"
+expected_columns="timestamp event_type operation_type duration_ms session_id user_id tenant_id plan_code success error_message metadata client_country client_region cloudflare_ray connecting_ip request_body"
 missing_columns=""
 
 for col in $expected_columns; do
